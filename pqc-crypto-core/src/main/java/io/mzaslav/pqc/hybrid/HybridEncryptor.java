@@ -2,6 +2,8 @@ package io.mzaslav.pqc.hybrid;
 
 import io.mzaslav.pqc.algorithm.KemAlgorithm;
 import io.mzaslav.pqc.algorithm.MlKemParameterSet;
+import io.mzaslav.pqc.compression.CompressionAlgorithm;
+import io.mzaslav.pqc.compression.DataCompressor;
 import io.mzaslav.pqc.encryption.AeadEncryptor;
 import io.mzaslav.pqc.exception.EncryptionException;
 import io.mzaslav.pqc.kem.*;
@@ -55,7 +57,9 @@ public final class HybridEncryptor {
     
     private final KemProvider kemProvider;
     private final MlKemParameterSet mlKemParameterSet;
-    
+
+    private DataCompressor compressor;
+
     /**
      * Creates a new hybrid encryptor with the specified KEM provider.
      *
@@ -65,6 +69,15 @@ public final class HybridEncryptor {
     private HybridEncryptor(KemProvider kemProvider, MlKemParameterSet mlKemParameterSet) {
         this.kemProvider = kemProvider;
         this.mlKemParameterSet = mlKemParameterSet;
+    }
+
+    /**
+     * Sets the data compressor to use.
+     *
+     * @param compressor the data compressor
+     */
+    public void setCompressor(DataCompressor compressor) {
+        this.compressor = compressor;
     }
     
     /**
@@ -170,7 +183,19 @@ public final class HybridEncryptor {
                                      byte[] associatedData) {
         Objects.requireNonNull(recipientPublicKey, "Recipient public key cannot be null");
         Objects.requireNonNull(plaintext, "Plaintext cannot be null");
-        
+
+        byte[] dataToEncrypt = plaintext;
+        CompressionAlgorithm compAlgo = CompressionAlgorithm.NONE;
+
+        if (this.compressor != null) {
+            byte[] compressedData = this.compressor.compress(plaintext);
+
+            if (compressedData.length < plaintext.length) {
+                dataToEncrypt = compressedData;
+                compAlgo = this.compressor.getAlgorithm();
+            }
+        }
+
         EncapsulationResult kemResult = null;
         byte[] sharedSecret = null;
         
@@ -183,16 +208,16 @@ public final class HybridEncryptor {
             AeadEncryptor aeadEncryptor = new AeadEncryptor(sharedSecret);
             byte[] ciphertext;
             try {
-                ciphertext = aeadEncryptor.encrypt(plaintext, associatedData);
+                ciphertext = aeadEncryptor.encrypt(dataToEncrypt, associatedData);
             } finally {
                 aeadEncryptor.destroy();
             }
             
             return new EncryptedMessage(
                 kemProvider.getAlgorithm(),
-                kemResult.getCiphertext(),
-                ciphertext
-            );
+                    compAlgo,
+                    kemResult.getCiphertext(),
+                    ciphertext);
             
         } finally {
             if (kemResult != null) kemResult.destroy();
@@ -241,12 +266,26 @@ public final class HybridEncryptor {
             
             // Decrypt ciphertext
             AeadEncryptor aeadEncryptor = new AeadEncryptor(sharedSecret);
+            byte[] decryptedData;
             try {
-                return aeadEncryptor.decrypt(encryptedMessage.getCiphertext(), associatedData);
+                decryptedData = aeadEncryptor.decrypt(encryptedMessage.getCiphertext(), associatedData);
             } finally {
                 aeadEncryptor.destroy();
             }
-            
+
+            CompressionAlgorithm messageCompAlgo = encryptedMessage.getCompressionAlgorithm();
+            if (messageCompAlgo != CompressionAlgorithm.NONE) {
+                if (this.compressor == null || this.compressor.getAlgorithm() != messageCompAlgo) {
+                    throw new EncryptionException(String.format(
+                            "Cannot decompress: message requires %s, but provided %s",
+                            messageCompAlgo.name(),
+                            this.compressor == null ? "NONE" : this.compressor.getAlgorithm().name()
+                    ));
+                }
+                return this.compressor.decompress(decryptedData);
+            }
+            return decryptedData;
+
         } finally {
             SecureBytes.wipe(sharedSecret);
         }
