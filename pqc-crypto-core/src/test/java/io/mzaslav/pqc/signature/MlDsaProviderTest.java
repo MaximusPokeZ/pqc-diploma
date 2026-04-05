@@ -1,6 +1,7 @@
 package io.mzaslav.pqc.signature;
 
 import io.mzaslav.pqc.algorithm.MlDsaParameterSet;
+import io.mzaslav.pqc.algorithm.SignatureAlgorithm;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ class MlDsaProviderTest {
             
             try (SignatureKeyPair keyPair = provider.generateKeyPair()) {
                 assertThat(keyPair).isNotNull();
-                assertThat(keyPair.getParameterSet()).isEqualTo(parameterSet);
+                assertThat(keyPair.getAlgorithm()).isEqualTo(SignatureAlgorithm.ML_DSA);
                 assertThat(keyPair.getPublicKey()).isNotNull();
                 assertThat(keyPair.getPrivateKey()).isNotNull();
             }

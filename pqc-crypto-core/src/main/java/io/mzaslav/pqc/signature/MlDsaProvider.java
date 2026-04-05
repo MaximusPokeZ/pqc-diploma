@@ -1,6 +1,7 @@
 package io.mzaslav.pqc.signature;
 
 import io.mzaslav.pqc.algorithm.MlDsaParameterSet;
+import io.mzaslav.pqc.algorithm.SignatureAlgorithm;
 import io.mzaslav.pqc.exception.KeyGenerationException;
 import io.mzaslav.pqc.exception.SignatureException;
 
@@ -87,15 +88,10 @@ public final class MlDsaProvider implements SignatureProvider {
     }
     
     @Override
-    public MlDsaParameterSet getParameterSet() {
-        return parameterSet;
-    }
-    
-    @Override
     public synchronized SignatureKeyPair generateKeyPair() {
         try {
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
-            return new SignatureKeyPair(parameterSet, keyPair.getPublic(), keyPair.getPrivate());
+            return new SignatureKeyPair(SignatureAlgorithm.ML_DSA, keyPair.getPublic(), keyPair.getPrivate());
         } catch (Exception e) {
             throw new KeyGenerationException("Failed to generate ML-DSA key pair", e);
         }
@@ -163,6 +159,24 @@ public final class MlDsaProvider implements SignatureProvider {
     @Override
     public int getSignatureSize() {
         return parameterSet.getSignatureSize();
+    }
+
+    @Override
+    public SignatureAlgorithm getAlgorithm() { return SignatureAlgorithm.ML_DSA; }
+
+    @Override
+    public byte[] sign(byte[] encodedPrivateKey, byte[] message) {
+        try {
+            java.security.spec.PKCS8EncodedKeySpec keySpec = new java.security.spec.PKCS8EncodedKeySpec(encodedPrivateKey);
+            PrivateKey privKey = keyFactory.generatePrivate(keySpec);
+            return sign(privKey, message);
+        } catch (java.security.spec.InvalidKeySpecException e) {
+            throw new io.mzaslav.pqc.exception.SignatureException("Invalid encoded ML-DSA private key format", e);
+        }
+    }
+
+    public MlDsaParameterSet getParameterSet() {
+        return parameterSet;
     }
     
     @Override

@@ -286,7 +286,6 @@ class HybridEncryptorTest {
                 int estimatedSize = encryptor.estimateEncryptedSize(plaintextSize);
                 int actualSize = encrypted.toBytes().length;
                 
-                // Estimate should be close to actual
                 assertThat(estimatedSize).isCloseTo(actualSize, within(10));
             }
         }
@@ -343,7 +342,8 @@ class HybridEncryptorTest {
         void shouldEncryptAndDecryptWithGzip() {
             HybridEncryptor encryptor = HybridEncryptor.create();
             encryptor.setCompressor(new GzipCompressor());
-            byte[] plaintext = "Hello, compressed encryption!".getBytes(StandardCharsets.UTF_8);
+            String repetitiveData = "This is a highly compressible repetitive payload for testing adaptive compression fallback! ".repeat(50);
+            byte[] plaintext = repetitiveData.getBytes(StandardCharsets.UTF_8);
 
             try (KemKeyPair keyPair = encryptor.generateKeyPair()) {
                 EncryptedMessage encrypted = encryptor.encrypt(
@@ -363,7 +363,7 @@ class HybridEncryptorTest {
             encryptorWithCompression.setCompressor(new GzipCompressor());
             HybridEncryptor encryptorWithoutCompression = HybridEncryptor.create();
 
-            byte[] plaintext = "Secret".getBytes(StandardCharsets.UTF_8);
+            byte[] plaintext = "Secret".repeat(50).getBytes(StandardCharsets.UTF_8);
 
             try (KemKeyPair keyPair = encryptorWithCompression.generateKeyPair()) {
                 EncryptedMessage encrypted = encryptorWithCompression.encrypt(
@@ -380,7 +380,7 @@ class HybridEncryptorTest {
         void serializeDeserializeWithCompression() {
             HybridEncryptor encryptor = HybridEncryptor.create();
             encryptor.setCompressor(new GzipCompressor());
-            byte[] plaintext = "Round-trip with compression".getBytes(StandardCharsets.UTF_8);
+            byte[] plaintext = "Round-trip with compression".repeat(50).getBytes(StandardCharsets.UTF_8);
 
             try (KemKeyPair keyPair = encryptor.generateKeyPair()) {
                 EncryptedMessage encrypted = encryptor.encrypt(
@@ -523,4 +523,51 @@ class HybridEncryptorTest {
             }
         }
     }
+
+    @Test
+    @DisplayName("Adaptive compression fallback: skips compression for tiny payloads")
+    void shouldBypassCompressionForTinyPayloads() {
+        HybridEncryptor encryptor = HybridEncryptor.create();
+        encryptor.setCompressor(new GzipCompressor());
+
+        // Маленький payload - всего 4 байта
+        byte[] tinyPlaintext = "Ping".getBytes(StandardCharsets.UTF_8);
+
+        try (KemKeyPair keyPair = encryptor.generateKeyPair()) {
+            EncryptedMessage message = encryptor.encrypt(keyPair.getEncodedPublicKey(), tinyPlaintext);
+
+            // Сжатие отменено из-за оверхеда архиватора
+            assertThat(message.getCompressionAlgorithm()).isEqualTo(CompressionAlgorithm.NONE);
+
+            byte[] decrypted = encryptor.decrypt(keyPair, message);
+            assertThat(decrypted).isEqualTo(tinyPlaintext);
+        }
+    }
+
+    @Test
+    @DisplayName("Adaptive compression fallback: skips compression for high-entropy data")
+    void shouldBypassCompressionForHighEntropyData() {
+        HybridEncryptor encryptor = HybridEncryptor.create();
+
+        encryptor.setCompressor(new GzipCompressor());
+
+        // Генерируем "Несжимаемые" данные (чистый криптографический шум, 1024 байта)
+        // Архиватор обязательно увеличит их размер из-за добавления словарей и CRC-сумм
+        byte[] highEntropyPlaintext = SecureBytes.randomBytes(1024);
+
+        try (KemKeyPair keyPair = encryptor.generateKeyPair()) {
+
+            EncryptedMessage message = encryptor.encrypt(keyPair.getEncodedPublicKey(), highEntropyPlaintext);
+
+            assertThat(message.getCompressionAlgorithm())
+                    .as("Smart fallback should override GZIP with NONE for random data")
+                    .isEqualTo(CompressionAlgorithm.NONE);
+
+            byte[] decrypted = encryptor.decrypt(keyPair, message);
+            assertThat(decrypted).isEqualTo(highEntropyPlaintext);
+
+            System.out.println("[Test] Adaptive Fallback: Triggered successfully! High-entropy data bypassed GZIP.");
+        }
+    }
+
 }

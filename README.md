@@ -1,19 +1,37 @@
-PQC Hybrid Starter — это библиотека для Spring Boot, обеспечивающая гибридную постквантовую защиту данных. Она объединяет классическую криптографию (X25519) и стандарты NIST PQC (ML-KEM, ML-DSA), используя нативные API Java 25. Проект защищает от угрозы «Harvest Now, Decrypt Later» и позволяет внедрить квантово-устойчивое шифрование в приложение за несколько минут через конфигурацию.
+# `pqc-diploma`
 
-Структура модулей
-1. pqc-crypto-core (Ядро)
+Библиотека для гибридной постквантовой защиты данных в Spring Boot и Java-приложениях.
 
-Отвечает за: Чистую криптографическую логику.
-Что делает: Реализует алгоритмы генерации ключей, инкапсуляции (X25519 + ML-KEM) и цифровой подписи (ML-DSA). Содержит логику безопасного объединения секретов (Hybrid Combiner). Не зависит от Spring, чистая Java.
-pqc-spring-boot-autoconfigure
+Проект объединяет классическую криптографию и PQC-алгоритмы NIST:
 
-2. pqc-spring-boot-autoconfigure
+- KEM: `X25519` / `SECP256R1` + `ML-KEM`
+- Подписи: `ML-DSA`
+- Режимы: `HYBRID`, `PQC_ONLY`, `CLASSICAL_ONLY`
 
-Отвечает за: Интеграцию ядра в экосистему Spring Boot.
-Что делает: Читает настройки из application.yml (включение/выключение, выбор алгоритмов), создает Bean-компоненты (Encryptor, Signer), которые разработчик может внедрять (@Autowired) в свой код.
-pqc-hybrid-spring-boot-starter (Точка входа)
+## Модули
 
-3. pqc-hybrid-spring-boot-starter (Точка входа)
+1. `pqc-crypto-core`  
+   Чистое криптографическое ядро без Spring.  
+   Подробнее: [`pqc-crypto-core/README.md`](pqc-crypto-core/README.md)
 
-Отвечает за: Удобство подключения.
-Что делает: Пустой модуль-агрегатор. Разработчик добавляет только эту зависимость в свой проект, а она транзитивно подтягивает core, autoconfigure и нужные версии Spring Boot.
+2. `pqc-spring-boot-autoconfigure`  
+   Автоконфигурация Spring Boot и биндинг `pqc.*` настроек.  
+   Подробнее: [`pqc-spring-boot-autoconfigure/README.md`](pqc-spring-boot-autoconfigure/README.md)
+
+3. `pqc-hybrid-spring-boot-starter`  
+   Финальный starter-модуль для подключения одной зависимостью.  
+   Подробнее: [`pqc-hybrid-spring-boot-starter/README.md`](pqc-hybrid-spring-boot-starter/README.md)
+
+## Быстрый старт
+
+```kotlin
+implementation("io.github.mzaslav.pqc:pqc-hybrid-spring-boot-starter:<version>")
+```
+
+```yaml
+pqc:
+  encryption:
+    mode: HYBRID
+  signature:
+    pqc-algorithm: ML_DSA_65
+```

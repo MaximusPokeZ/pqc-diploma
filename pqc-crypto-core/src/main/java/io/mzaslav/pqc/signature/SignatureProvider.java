@@ -1,6 +1,7 @@
 package io.mzaslav.pqc.signature;
 
 import io.mzaslav.pqc.algorithm.MlDsaParameterSet;
+import io.mzaslav.pqc.algorithm.SignatureAlgorithm;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -24,68 +25,45 @@ import java.security.PublicKey;
  * @since 1.0
  */
 public interface SignatureProvider {
-    
+
     /**
-     * Returns the ML-DSA parameter set implemented by this provider.
-     *
-     * @return the parameter set
+     * Returns the algorithm implemented by this provider.
      */
-    MlDsaParameterSet getParameterSet();
-    
+    SignatureAlgorithm getAlgorithm();
+
     /**
      * Generates a new signing key pair.
-     *
-     * @return a new key pair
-     * @throws io.mzaslav.pqc.exception.KeyGenerationException if key generation fails
      */
     SignatureKeyPair generateKeyPair();
-    
+
     /**
-     * Signs a message using the private key.
-     *
-     * @param privateKey the private (signing) key
-     * @param message    the message to sign
-     * @return the signature bytes
-     * @throws io.mzaslav.pqc.exception.SignatureException if signing fails
+     * Signs a message using a JCA private key.
      */
     byte[] sign(PrivateKey privateKey, byte[] message);
-    
+
+    /**
+     * Signs a message using raw encoded private key bytes.
+     * (Crucial for Hybrid Composites)
+     */
+    byte[] sign(byte[] encodedPrivateKey, byte[] message);
+
     /**
      * Signs a message using a signature key pair.
-     *
-     * @param keyPair the key pair containing the private key
-     * @param message the message to sign
-     * @return the signature bytes
-     * @throws io.mzaslav.pqc.exception.SignatureException if signing fails
      */
     byte[] sign(SignatureKeyPair keyPair, byte[] message);
-    
+
     /**
-     * Verifies a signature on a message using the public key.
-     *
-     * @param publicKey the public (verification) key
-     * @param message   the original message
-     * @param signature the signature to verify
-     * @return true if the signature is valid, false otherwise
-     * @throws io.mzaslav.pqc.exception.SignatureException if verification fails due to an error
+     * Verifies a signature using a JCA public key.
      */
     boolean verify(PublicKey publicKey, byte[] message, byte[] signature);
-    
+
     /**
-     * Verifies a signature using an encoded public key.
-     *
-     * @param encodedPublicKey the encoded public key
-     * @param message          the original message
-     * @param signature        the signature to verify
-     * @return true if the signature is valid, false otherwise
-     * @throws io.mzaslav.pqc.exception.SignatureException if verification fails due to an error
+     * Verifies a signature using raw encoded public key bytes.
      */
     boolean verify(byte[] encodedPublicKey, byte[] message, byte[] signature);
-    
+
     /**
-     * Returns the expected signature size in bytes for this algorithm.
-     *
-     * @return the signature size
+     * Returns the expected signature size in bytes.
      */
     int getSignatureSize();
 }

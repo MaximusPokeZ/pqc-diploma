@@ -44,8 +44,8 @@ import java.util.Objects;
 public final class HybridKemProvider implements KemProvider {
     
     private static final int SHARED_SECRET_SIZE = 32;
-    
-    private final X25519Provider x25519Provider;
+
+    private final KemProvider classicalProvider;
     private final MlKemProvider mlKemProvider;
     private final HybridCombiner combiner;
     private final MlKemParameterSet mlKemParameterSet;
@@ -56,12 +56,15 @@ public final class HybridKemProvider implements KemProvider {
      * @param mlKemParameterSet the ML-KEM parameter set
      * @throws KeyGenerationException if algorithms are not available
      */
-    public HybridKemProvider(MlKemParameterSet mlKemParameterSet) {
-        this.mlKemParameterSet = Objects.requireNonNull(mlKemParameterSet, 
-            "ML-KEM parameter set cannot be null");
-        this.x25519Provider = new X25519Provider();
+    public HybridKemProvider(KemProvider classicalProvider, MlKemParameterSet mlKemParameterSet) {
+        this.classicalProvider = Objects.requireNonNull(classicalProvider, "Classical Provider cannot be null");
+        this.mlKemParameterSet = Objects.requireNonNull(mlKemParameterSet, "ML-KEM parameter set cannot be null");
         this.mlKemProvider = new MlKemProvider(mlKemParameterSet);
         this.combiner = new HybridCombiner();
+    }
+
+    public HybridKemProvider(MlKemParameterSet mlKemParameterSet) {
+        this(new X25519Provider(), mlKemParameterSet);
     }
     
     /**
@@ -90,7 +93,7 @@ public final class HybridKemProvider implements KemProvider {
     @Override
     public KemKeyPair generateKeyPair() {
         // Generate both key pairs
-        KemKeyPair x25519KeyPair = x25519Provider.generateKeyPair();
+        KemKeyPair x25519KeyPair = classicalProvider.generateKeyPair();
         KemKeyPair mlKemKeyPair = mlKemProvider.generateKeyPair();
         
         try {
@@ -133,7 +136,7 @@ public final class HybridKemProvider implements KemProvider {
         EncapsulationResult mlKemResult = null;
         
         try {
-            x25519Result = x25519Provider.encapsulate(compositeKey.getX25519Key());
+            x25519Result = classicalProvider.encapsulate(compositeKey.getX25519Key());
             mlKemResult = mlKemProvider.encapsulate(compositeKey.getMlKemKey());
             
             // Combine shared secrets
@@ -170,7 +173,7 @@ public final class HybridKemProvider implements KemProvider {
         EncapsulationResult mlKemResult = null;
         
         try {
-            x25519Result = x25519Provider.encapsulate(x25519EncodedKey);
+            x25519Result = classicalProvider.encapsulate(x25519EncodedKey);
             mlKemResult = mlKemProvider.encapsulate(mlKemEncodedKey);
             
             // Combine shared secrets
@@ -218,7 +221,7 @@ public final class HybridKemProvider implements KemProvider {
         
         try {
             // Decapsulate using both algorithms
-            byte[] x25519Secret = x25519Provider.decapsulate(x25519KeyPair, x25519Ciphertext);
+            byte[] x25519Secret = classicalProvider.decapsulate(x25519KeyPair, x25519Ciphertext);
             byte[] mlKemSecret = mlKemProvider.decapsulate(mlKemKeyPair, mlKemCiphertext);
             
             // Combine shared secrets
@@ -237,7 +240,7 @@ public final class HybridKemProvider implements KemProvider {
     @Override
     public int getCiphertextSize() {
         // 4 bytes for X25519 length + X25519 ciphertext + 4 bytes for ML-KEM length + ML-KEM ciphertext
-        return 4 + x25519Provider.getCiphertextSize() + 4 + mlKemProvider.getCiphertextSize();
+        return 4 + classicalProvider.getCiphertextSize() + 4 + mlKemProvider.getCiphertextSize();
     }
     
     @Override

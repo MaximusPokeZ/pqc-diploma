@@ -1,6 +1,9 @@
 package io.mzaslav.pqc.hybrid;
 
+import io.mzaslav.pqc.algorithm.ClassicalSigAlgorithm;
 import io.mzaslav.pqc.algorithm.MlDsaParameterSet;
+import io.mzaslav.pqc.signature.ClassicalSignatureProvider;
+import io.mzaslav.pqc.signature.HybridSignatureProvider;
 import io.mzaslav.pqc.signature.MlDsaProvider;
 import io.mzaslav.pqc.signature.SignatureKeyPair;
 import io.mzaslav.pqc.signature.SignatureProvider;
@@ -53,130 +56,116 @@ import java.util.Objects;
  * @since 1.0
  */
 public final class HybridSigner {
-    
+
     private final SignatureProvider signatureProvider;
-    private final MlDsaParameterSet parameterSet;
-    
+    private final MlDsaParameterSet parameterSet; // Может быть null для CLASSICAL_ONLY режима
+
     /**
      * Creates a new hybrid signer with the specified provider.
-     *
-     * @param signatureProvider the signature provider
-     * @param parameterSet      the ML-DSA parameter set
      */
     private HybridSigner(SignatureProvider signatureProvider, MlDsaParameterSet parameterSet) {
         this.signatureProvider = signatureProvider;
         this.parameterSet = parameterSet;
     }
-    
-    /**
-     * Creates a hybrid signer using ML-DSA-65 (recommended).
-     *
-     * @return a new hybrid signer
-     */
-    public static HybridSigner create() {
-        return create(MlDsaParameterSet.ML_DSA_65);
-    }
-    
-    /**
-     * Creates a hybrid signer with the specified ML-DSA parameter set.
-     *
-     * @param parameterSet the ML-DSA parameter set
-     * @return a new hybrid signer
-     */
-    public static HybridSigner create(MlDsaParameterSet parameterSet) {
+
+    // =========================================================================
+    // 1. PQC-ONLY MODE (Только квантово-устойчивая подпись)
+    // =========================================================================
+    public static HybridSigner createPqcOnly(MlDsaParameterSet parameterSet) {
         Objects.requireNonNull(parameterSet, "Parameter set cannot be null");
         MlDsaProvider provider = new MlDsaProvider(parameterSet);
         return new HybridSigner(provider, parameterSet);
     }
-    
+
+    // =========================================================================
+    // 2. HYBRID MODE (Ed25519/ECDSA + ML-DSA) - Рекомендуется
+    // =========================================================================
+
     /**
-     * Returns the ML-DSA parameter set.
-     *
-     * @return the parameter set
+     * Creates a hybrid signer using Ed25519 + ML-DSA-65 (recommended default).
      */
+    public static HybridSigner create() {
+        return create(ClassicalSigAlgorithm.ED25519, MlDsaParameterSet.ML_DSA_65);
+    }
+
+    /**
+     * Creates a hybrid signer using Ed25519 and a specified ML-DSA parameter set.
+     */
+    public static HybridSigner create(MlDsaParameterSet parameterSet) {
+        return create(ClassicalSigAlgorithm.ED25519, parameterSet);
+    }
+
+    /**
+     * Creates a hybrid signer with manual selection of both algorithms.
+     */
+    public static HybridSigner create(ClassicalSigAlgorithm classicalAlgo, MlDsaParameterSet mlDsaParameterSet) {
+        Objects.requireNonNull(classicalAlgo, "Classical algorithm cannot be null");
+        Objects.requireNonNull(mlDsaParameterSet, "Parameter set cannot be null");
+
+        ClassicalSignatureProvider classicalProvider = new ClassicalSignatureProvider(classicalAlgo);
+        HybridSignatureProvider hybridProvider = new HybridSignatureProvider(classicalProvider, mlDsaParameterSet);
+
+        return new HybridSigner(hybridProvider, mlDsaParameterSet);
+    }
+
+    // =========================================================================
+    // 3. CLASSICAL-ONLY MODE (Ed25519, ECDSA_P256, RSA_2048)
+    // =========================================================================
+    public static HybridSigner createClassicalOnly(ClassicalSigAlgorithm classicalAlgo) {
+        Objects.requireNonNull(classicalAlgo, "Classical algorithm cannot be null");
+        ClassicalSignatureProvider provider = new ClassicalSignatureProvider(classicalAlgo);
+        return new HybridSigner(provider, null);
+    }
+
+    // =========================================================================
+    // КРИПТОГРАФИЧЕСКИЕ МЕТОДЫ (Без изменений)
+    // =========================================================================
+
     public MlDsaParameterSet getParameterSet() {
         return parameterSet;
     }
-    
-    /**
-     * Generates a new signing key pair.
-     *
-     * @return a new signature key pair
-     */
+
     public SignatureKeyPair generateKeyPair() {
         return signatureProvider.generateKeyPair();
     }
-    
-    /**
-     * Signs a message.
-     *
-     * @param keyPair the signing key pair
-     * @param message the message to sign
-     * @return the signature bytes
-     */
+
     public byte[] sign(SignatureKeyPair keyPair, byte[] message) {
         Objects.requireNonNull(keyPair, "Key pair cannot be null");
         Objects.requireNonNull(message, "Message cannot be null");
         return signatureProvider.sign(keyPair, message);
     }
-    
-    /**
-     * Verifies a signature on a message.
-     *
-     * @param encodedPublicKey the signer's encoded public key
-     * @param message          the original message
-     * @param signature        the signature to verify
-     * @return true if the signature is valid
-     */
+
     public boolean verify(byte[] encodedPublicKey, byte[] message, byte[] signature) {
         Objects.requireNonNull(encodedPublicKey, "Public key cannot be null");
         Objects.requireNonNull(message, "Message cannot be null");
         Objects.requireNonNull(signature, "Signature cannot be null");
         return signatureProvider.verify(encodedPublicKey, message, signature);
     }
-    
-    /**
-     * Verifies a signature using a key pair.
-     *
-     * @param keyPair   the key pair containing the public key
-     * @param message   the original message
-     * @param signature the signature to verify
-     * @return true if the signature is valid
-     */
+
     public boolean verify(SignatureKeyPair keyPair, byte[] message, byte[] signature) {
         Objects.requireNonNull(keyPair, "Key pair cannot be null");
         return verify(keyPair.getEncodedPublicKey(), message, signature);
     }
-    
-    /**
-     * Returns the signature size in bytes.
-     *
-     * @return the signature size
-     */
+
     public int getSignatureSize() {
         return signatureProvider.getSignatureSize();
     }
-    
-    /**
-     * Returns the public key size in bytes.
-     *
-     * @return the public key size
-     */
+
     public int getPublicKeySize() {
-        return parameterSet.getPublicKeySize();
+        // У классики размер ключа варьируется, в PQC он жестко зафиксирован
+        return parameterSet != null ? parameterSet.getPublicKeySize() : -1;
     }
-    
-    /**
-     * Returns the private key size in bytes.
-     *
-     * @return the private key size
-     */
+
     public int getPrivateKeySize() {
-        return parameterSet.getPrivateKeySize();
+        return parameterSet != null ? parameterSet.getPrivateKeySize() : -1;
     }
-    
+
     @Override
     public String toString() {
-        return String.format("HybridSigner[%s]", parameterSet.getParameterName());
+        if (parameterSet != null) {
+            return String.format("HybridSigner[Mode=%s, PQC=%s]",
+                    signatureProvider.getAlgorithm(), parameterSet.getParameterName());
+        }
+        return String.format("HybridSigner[Mode=%s]", signatureProvider.getAlgorithm());
     }
 }

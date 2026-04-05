@@ -1,0 +1,9 @@
+pqc:
+  encryption:
+    mode: PQC_ONLY
+    pqc-algorithm: ML_KEM_512
+    compression:
+      enabled: true
+      algorithm: ZSTD
+  signature:
+    pqc-algorithm: ML_DSA_44
