@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jwt-pqc-demo
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+demo:
+  load-test:
+    defaults:
+      algorithm: ML-DSA-65
+      iterations: 5000
+pqc:
+  encryption:
+    mode: HYBRID
+    pqc-algorithm: ML_KEM_512
+    classical-algorithm: X25519
+    compression:
+      enabled: true
+      algorithm: ZSTD
+  signature:
+    enabled: true
+    mode: HYBRID
+    pqc-algorithm: ML_DSA_65
+    classical-algorithm: ED25519

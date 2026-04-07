@@ -1,5 +1,6 @@
 package io.mzaslav.pqc.hybrid;
 
+import io.mzaslav.pqc.algorithm.ClassicalSigAlgorithm;
 import io.mzaslav.pqc.algorithm.MlDsaParameterSet;
 import io.mzaslav.pqc.signature.SignatureKeyPair;
 import org.junit.jupiter.api.DisplayName;
@@ -148,16 +149,28 @@ class HybridSignerTest {
     class SizeInfoTest {
 
         @Test
-        @DisplayName("should report correct sizes")
+        @DisplayName("should report correct signature sizes for Hybrid and PQC-Only modes")
         void shouldReportCorrectSizes() {
-            HybridSigner signer = HybridSigner.create(MlDsaParameterSet.ML_DSA_65);
-            
-            assertThat(signer.getSignatureSize())
-                .isEqualTo(MlDsaParameterSet.ML_DSA_65.getSignatureSize());
-            assertThat(signer.getPublicKeySize())
-                .isEqualTo(MlDsaParameterSet.ML_DSA_65.getPublicKeySize());
-            assertThat(signer.getPrivateKeySize())
-                .isEqualTo(MlDsaParameterSet.ML_DSA_65.getPrivateKeySize());
+
+            // 1. Тестируем чистый PQC режим (только ML-DSA-65)
+            HybridSigner pqcSigner = HybridSigner.createPqcOnly(MlDsaParameterSet.ML_DSA_65);
+
+            assertThat(pqcSigner.getSignatureSize())
+                    .as("PQC-only signature should match ML-DSA specs + JCA ASN.1 overhead")
+                    .isEqualTo(MlDsaParameterSet.ML_DSA_65.getSignatureSize());
+
+            // 2. Тестируем гибридный режим (Ed25519 + ML-DSA-65)
+            HybridSigner hybridSigner = HybridSigner.create(
+                    ClassicalSigAlgorithm.ED25519,
+                    MlDsaParameterSet.ML_DSA_65
+            );
+
+            // В гибриде размер = ML_DSA(3381) + Ed25519(64) + 8 bytes headers = 3453
+            int expectedHybridSize = MlDsaParameterSet.ML_DSA_65.getSignatureSize() + 64 + 8;
+
+            assertThat(hybridSigner.getSignatureSize())
+                    .as("Hybrid signature should sum both algorithms + framing overhead")
+                    .isEqualTo(expectedHybridSize);
         }
 
         @Test

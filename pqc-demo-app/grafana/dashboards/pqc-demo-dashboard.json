@@ -1,0 +1,74 @@
+{
+  "title": "Diplom PQC Comparative Benchmark",
+  "tags": ["pqc", "diploma"],
+  "timezone": "browser",
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": [ "All" ], "value": [ "$__all" ] },
+        "includeAll": true,
+        "multi": true,
+        "name": "Algorithm",
+        "options": [],
+        "query": "label_values(demo_jwt_sign_duration_seconds_count, algorithm)",
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "95th Percentile: Время создания подписи (Sign P95, за период)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(increase(demo_jwt_sign_duration_seconds_bucket{algorithm=~\"$Algorithm\"}[$__range])) by (le, algorithm)) * 1000",
+          "legendFormat": "{{algorithm}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "title": "95th Percentile: Время проверки подписи (Verify P95, за период)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(increase(demo_jwt_verify_duration_seconds_bucket{algorithm=~\"$Algorithm\"}[$__range])) by (le, algorithm)) * 1000",
+          "legendFormat": "{{algorithm}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "palette-classic" } } }
+    },
+    {
+      "title": "Накладные расходы: Физический размер JWT токена",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "max(max_over_time(demo_jwt_token_size_bytes_max{algorithm=~\"$Algorithm\"}[$__range])) by (algorithm)",
+          "legendFormat": "{{algorithm}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "color": { "mode": "palette-classic" } }
+      },
+      "options": { "orientation": "horizontal", "showValue": "always", "text": {} }
+    },
+    {
+      "title": "Средняя пропускная способность (TPS за период)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "sum(increase(demo_jwt_operations_total{operation=\"verify\", algorithm=~\"$Algorithm\"}[$__range])) by (algorithm) / $__range_s",
+          "legendFormat": "{{algorithm}} TPS"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "op/s", "color": { "mode": "palette-classic" } } }
+    }
+  ]
+}
