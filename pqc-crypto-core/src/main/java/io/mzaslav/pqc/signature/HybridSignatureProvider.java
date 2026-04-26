@@ -4,11 +4,30 @@ import io.mzaslav.pqc.algorithm.MlDsaParameterSet;
 import io.mzaslav.pqc.algorithm.SignatureAlgorithm;
 import io.mzaslav.pqc.util.SecureBytes;
 
+/**
+ * Hybrid digital signature provider combining a classical scheme
+ * (Ed25519, ECDSA P-256 or RSA-2048) with ML-DSA (FIPS 204).
+ * <p>
+ * Both signatures must verify for the hybrid signature to be accepted; the
+ * scheme is therefore secure as long as either component remains unbroken.
+ * <p>
+ * Wire format for keys and signatures: {@code len1 || data1 || len2 || data2}
+ * where lengths are 4-byte big-endian integers.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 public final class HybridSignatureProvider implements SignatureProvider {
 
     private final ClassicalSignatureProvider classicalProvider;
     private final MlDsaProvider mlDsaProvider;
 
+    /**
+     * Creates a new hybrid signature provider.
+     *
+     * @param classicalProvider  the classical signature provider
+     * @param mlDsaParameterSet  the ML-DSA parameter set
+     */
     public HybridSignatureProvider(ClassicalSignatureProvider classicalProvider, MlDsaParameterSet mlDsaParameterSet) {
         this.classicalProvider = classicalProvider;
         this.mlDsaProvider = new MlDsaProvider(mlDsaParameterSet);
@@ -26,8 +45,9 @@ public final class HybridSignatureProvider implements SignatureProvider {
             byte[] combinedPub = encodeHybridData(classKp.getEncodedPublicKey(), pqcKp.getEncodedPublicKey());
             byte[] combinedPriv = encodeHybridData(classKp.getEncodedPrivateKey(), pqcKp.getEncodedPrivateKey());
 
+            // For hybrid we operate on encoded byte arrays; JCA Key objects are placeholders.
             return new SignatureKeyPair(SignatureAlgorithm.HYBRID,
-                    classKp.getPublicKey(), classKp.getPrivateKey(), // JCA объекты здесь оставляем пустышками (для гибрида мы юзаем байты)
+                    classKp.getPublicKey(), classKp.getPrivateKey(),
                     combinedPub, combinedPriv);
         } finally {
             classKp.destroy();
@@ -37,22 +57,14 @@ public final class HybridSignatureProvider implements SignatureProvider {
 
     @Override
     public byte[] sign(byte[] encodedPrivateKey, byte[] message) {
-        // 1. Декодируем гибридный ключ на 2 части
         byte[][] keys = decodeHybridData(encodedPrivateKey);
-
-        // 2. Подписываем классическим алгоритмом (Ed25519)
         byte[] classSig = classicalProvider.sign(keys[0], message);
-
-        // 3. Подписываем постквантовым алгоритмом (ML-DSA)
         byte[] pqcSig = mlDsaProvider.sign(keys[1], message);
-
-        // 4. Склеиваем подписи в одну
         return encodeHybridData(classSig, pqcSig);
     }
 
     @Override
     public byte[] sign(SignatureKeyPair keyPair, byte[] message) {
-        // Делегируем подписание массиву байт!
         return sign(keyPair.getEncodedPrivateKey(), message);
     }
 
@@ -64,20 +76,15 @@ public final class HybridSignatureProvider implements SignatureProvider {
     @Override
     public boolean verify(byte[] encodedPublicKey, byte[] message, byte[] signature) {
         try {
-            // Декодируем два публичных ключа и две подписи
             byte[][] pubKeys = decodeHybridData(encodedPublicKey);
             byte[][] sigs = decodeHybridData(signature);
 
-            // Проверяем классику
             boolean classValid = classicalProvider.verify(pubKeys[0], message, sigs[0]);
-
-            // Проверяем постквант
             boolean pqcValid = mlDsaProvider.verify(pubKeys[1], message, sigs[1]);
 
-            // Для успеха должны совпасть ОБЕ подписи!
             return classValid && pqcValid;
         } catch (Exception e) {
-            return false; // Защита от OutOfBoundsEx при кривых данных
+            return false;
         }
     }
 
@@ -88,11 +95,10 @@ public final class HybridSignatureProvider implements SignatureProvider {
 
     @Override
     public int getSignatureSize() {
-        // Конкатенация + 8 байт (два инта длины)
+        // 8 = two 4-byte length prefixes
         return 8 + classicalProvider.getSignatureSize() + mlDsaProvider.getSignatureSize();
     }
 
-    // --- Внутренние утилиты для объединения массивов ---
     private byte[] encodeHybridData(byte[] d1, byte[] d2) {
         byte[] res = new byte[8 + d1.length + d2.length];
         writeInt(res, 0, d1.length);

@@ -16,6 +16,18 @@ import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Demo JWT-style token service that uses the auto-configured
+ * {@link HybridSigner} to sign and verify payloads while recording
+ * Micrometer metrics for each operation.
+ * <p>
+ * Tokens use the simple format {@code base64url(payload).base64url(signature)} -
+ * sufficient for benchmarking signature schemes without dragging in a JOSE
+ * library that does not yet support ML-DSA natively.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class JwtService {
@@ -31,6 +43,13 @@ public class JwtService {
         this.serverKeyPair = hybridSigner.generateKeyPair();
     }
 
+    /**
+     * Builds a signed token for the given claims and records timing,
+     * size, efficiency and memory metrics under the active algorithm tag.
+     *
+     * @param claims arbitrary key/value claims to embed in the payload
+     * @return the encoded token in {@code payload.signature} form
+     */
     public String issueToken(Map<String, Object> claims) {
         String actualAlgo = hybridSigner.toString();
 
@@ -67,6 +86,14 @@ public class JwtService {
         }
     }
 
+    /**
+     * Verifies a token issued by {@link #issueToken(Map)} and records
+     * verification timing, memory and outcome counters.
+     *
+     * @param token     the token to verify
+     * @param algorithm metric tag (informational, the actual scheme comes from {@link HybridSigner})
+     * @return {@code true} if the signature checks out
+     */
     public boolean verifyToken(String token, String algorithm) {
         String actualAlgo = hybridSigner.toString();
         Timer.Sample sample = Timer.start(meterRegistry);

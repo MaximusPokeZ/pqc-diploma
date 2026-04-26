@@ -10,6 +10,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller that surfaces aggregated benchmark metrics.
+ * <p>
+ * Endpoints:
+ * <ul>
+ *   <li>{@code GET /metrics/{algorithm}} - per-algorithm metric snapshot
+ *       (timing, sizes, memory, success rate)</li>
+ *   <li>{@code GET /metrics/overhead?baseline=&compared=} - relative overhead
+ *       between two algorithms (useful for "PQC vs classical" charts)</li>
+ * </ul>
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @RestController
 @RequestMapping("/metrics")
 @RequiredArgsConstructor

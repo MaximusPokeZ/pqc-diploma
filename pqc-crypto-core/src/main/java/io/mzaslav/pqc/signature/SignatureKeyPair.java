@@ -31,6 +31,13 @@ public final class SignatureKeyPair implements AutoCloseable {
     private final byte[] encodedPrivateKey;
     private volatile boolean destroyed;
 
+    /**
+     * Wraps an existing JCA key pair.
+     *
+     * @param algorithm  the signature scheme identifier
+     * @param publicKey  the verification key
+     * @param privateKey the signing key
+     */
     public SignatureKeyPair(SignatureAlgorithm algorithm, PublicKey publicKey, PrivateKey privateKey) {
         this.algorithm = Objects.requireNonNull(algorithm, "Algorithm cannot be null");
         this.publicKey = Objects.requireNonNull(publicKey, "Public key cannot be null");
@@ -40,6 +47,17 @@ public final class SignatureKeyPair implements AutoCloseable {
         this.destroyed = false;
     }
 
+    /**
+     * Constructs a key pair carrying explicit encoded byte arrays alongside the
+     * JCA key objects (used by hybrid signers where the encoded form is the
+     * length-prefixed concatenation of two component keys).
+     *
+     * @param algorithm         the signature scheme identifier
+     * @param publicKey         the JCA verification key (may be a placeholder for hybrid)
+     * @param privateKey        the JCA signing key (may be a placeholder for hybrid)
+     * @param encodedPublicKey  the encoded public key bytes
+     * @param encodedPrivateKey the encoded private key bytes
+     */
     public SignatureKeyPair(SignatureAlgorithm algorithm, PublicKey publicKey, PrivateKey privateKey,
                             byte[] encodedPublicKey, byte[] encodedPrivateKey) {
         this.algorithm = algorithm;
@@ -72,6 +90,9 @@ public final class SignatureKeyPair implements AutoCloseable {
         return SecureBytes.copy(encodedPrivateKey);
     }
 
+    /**
+     * Securely wipes the encoded private key from memory. Idempotent.
+     */
     public void destroy() {
         if (!destroyed) {
             SecureBytes.wipe(encodedPrivateKey);

@@ -20,6 +20,16 @@ import io.mzaslav.pqc.algorithm.SignatureAlgorithm;
 import io.mzaslav.pqc.exception.KeyGenerationException;
 import io.mzaslav.pqc.exception.SignatureException;
 
+/**
+ * Classical (non post-quantum) digital signature provider.
+ * <p>
+ * Wraps the JCA signature engines for Ed25519, ECDSA P-256 and RSA-2048
+ * behind the unified {@link SignatureProvider} contract. Used both standalone
+ * (legacy interop) and as the classical half of {@link HybridSignatureProvider}.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 public final class ClassicalSignatureProvider implements SignatureProvider {
 
     private final ClassicalSigAlgorithm classicalAlgo;
@@ -27,6 +37,12 @@ public final class ClassicalSignatureProvider implements SignatureProvider {
     private final String signatureAlgorithmName;
     private final KeyFactory keyFactory;
 
+    /**
+     * Creates a provider for the requested classical signature algorithm.
+     *
+     * @param classicalAlgo the algorithm
+     * @throws KeyGenerationException if the JCA provider cannot supply the algorithm
+     */
     public ClassicalSignatureProvider(ClassicalSigAlgorithm classicalAlgo) {
         this.classicalAlgo = Objects.requireNonNull(classicalAlgo, "Algorithm cannot be null");
         try {
@@ -81,7 +97,6 @@ public final class ClassicalSignatureProvider implements SignatureProvider {
         }
     }
 
-    // НОВЫЙ МЕТОД из интерфейса
     @Override
     public byte[] sign(byte[] encodedPrivateKey, byte[] message) {
         try {

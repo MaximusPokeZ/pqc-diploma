@@ -16,6 +16,18 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+/**
+ * Cross-algorithm benchmarking service used to populate the comparison
+ * dashboard (classical vs. PQC-only vs. hybrid).
+ * <p>
+ * For each scheme, the service spins up a dedicated {@link HybridSigner},
+ * runs the configured number of sign/verify cycles and records timing,
+ * memory and size metrics into Micrometer with a human-readable
+ * {@code algorithm} tag.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -23,6 +35,12 @@ public class ComparativeBenchmarkService {
 
     private final MeterRegistry meterRegistry;
 
+    /**
+     * Runs the benchmark for every supported scheme (classical, PQC-only,
+     * and hybrid combinations).
+     *
+     * @param iterations sign/verify cycles per scheme
+     */
     public void runAllBenchmarks(int iterations) {
         log.info("Starting ALL benchmarks with {} iterations...", iterations);
         runBenchmark("[1] Classical (Ed25519)", HybridSigner.createClassicalOnly(ClassicalSigAlgorithm.ED25519), iterations);

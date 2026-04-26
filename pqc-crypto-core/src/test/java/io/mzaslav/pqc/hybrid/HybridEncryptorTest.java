@@ -570,4 +570,23 @@ class HybridEncryptorTest {
         }
     }
 
+    @Test
+    @DisplayName("Benchmark TPS (Throughput)")
+    void benchmarkThroughput() {
+        HybridEncryptor encryptor = HybridEncryptor.create();
+        encryptor.setCompressor(new Lz4Compressor());
+
+        byte[] data = SecureBytes.randomBytes(10240); // 10 KB
+        KemKeyPair kp = encryptor.generateKeyPair();
+
+        long start = System.currentTimeMillis();
+        int ops = 0;
+        while (System.currentTimeMillis() - start < 1000) { // Крутим ровно 1 секунду
+            EncryptedMessage msg = encryptor.encrypt(kp.getEncodedPublicKey(), data);
+            encryptor.decrypt(kp, msg);
+            ops++;
+        }
+        System.out.println("Operations per second (TPS): " + ops);
+    }
+
 }

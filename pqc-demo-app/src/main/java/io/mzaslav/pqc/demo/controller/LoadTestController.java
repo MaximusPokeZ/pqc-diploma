@@ -17,6 +17,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * REST controller exposing load-test entry points used by the demo.
+ * <p>
+ * Provides:
+ * <ul>
+ *   <li>{@code POST /load-test/run} - run a single benchmark with a chosen algorithm and iteration count</li>
+ *   <li>{@code GET  /load-test/defaults} - return the default benchmark parameters</li>
+ *   <li>{@code POST /load-test/run-all} - toggle a periodic comparative benchmark across all schemes</li>
+ * </ul>
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @RestController
 @RequestMapping("/load-test")
 @RequiredArgsConstructor

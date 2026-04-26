@@ -9,6 +9,15 @@ import java.util.zip.GZIPOutputStream;
 import io.mzaslav.pqc.compression.CompressionAlgorithm;
 import io.mzaslav.pqc.compression.DataCompressor;
 
+/**
+ * GZIP compressor based on the JDK {@link java.util.zip.GZIPOutputStream}.
+ * <p>
+ * Provides good compression ratios on text-like payloads and is universally
+ * available, but is the slowest of the supported algorithms.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 public class GzipCompressor implements DataCompressor {
 
     @Override

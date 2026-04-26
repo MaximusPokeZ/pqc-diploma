@@ -94,13 +94,17 @@ public final class EncryptedMessage {
      * @return the total size
      */
     public int getTotalSize() {
-        // Версия(1) + KemAlgorithm(1) + CompressionAlgo(1) + Длина KEM(4) + KEM + Шифротекст
+        // Version(1) + KemAlgorithm(1) + CompressionAlgo(1) + KEM length(4) + KEM CT + AEAD CT
         return 1 + 1 + 1 + 4 + encapsulatedKey.length + ciphertext.length;
     }
 
+    /**
+     * @return the compression algorithm tag stored in the message header
+     */
     public CompressionAlgorithm getCompressionAlgorithm() {
         return compressionAlgorithm;
     }
+
     /**
      * Serializes this encrypted message to bytes.
      *

@@ -13,6 +13,23 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
+/**
+ * Spring Boot auto-configuration for the PQC hybrid cryptography library.
+ * <p>
+ * Reads {@code pqc.*} properties via {@link PqcProperties} and exposes
+ * {@link HybridEncryptor} and {@link HybridSigner} beans configured for the
+ * requested mode (HYBRID, PQC_ONLY or CLASSICAL_ONLY). Beans are only
+ * registered when the corresponding {@code pqc.encryption.enabled} /
+ * {@code pqc.signature.enabled} property is {@code true} (default) and no
+ * user-provided bean of the same type already exists.
+ * <p>
+ * Activated automatically through {@code spring.factories} /
+ * {@code AutoConfiguration.imports}; consumers normally pull this in
+ * transitively through the {@code pqc-hybrid-spring-boot-starter} module.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @AutoConfiguration
 @ConditionalOnClass({HybridEncryptor.class, HybridSigner.class})
 @EnableConfigurationProperties(PqcProperties.class)
@@ -20,6 +37,14 @@ public class PqcAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(PqcAutoConfiguration.class);
 
+    /**
+     * Builds and configures a {@link HybridEncryptor} bean from the bound
+     * {@code pqc.encryption.*} properties, attaching a {@link DataCompressor}
+     * when compression is enabled.
+     *
+     * @param properties resolved PQC configuration
+     * @return the configured encryptor
+     */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "pqc.encryption", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -42,6 +67,13 @@ public class PqcAutoConfiguration {
         return encryptor;
     }
 
+    /**
+     * Builds and configures a {@link HybridSigner} bean from the bound
+     * {@code pqc.signature.*} properties.
+     *
+     * @param properties resolved PQC configuration
+     * @return the configured signer
+     */
     @Bean
     @ConditionalOnMissingBean
     @ConditionalOnProperty(prefix = "pqc.signature", name = "enabled", havingValue = "true", matchIfMissing = true)

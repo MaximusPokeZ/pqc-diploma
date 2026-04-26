@@ -7,6 +7,14 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
+/**
+ * Drives a single-algorithm load test: it issues and verifies tokens via
+ * {@link JwtService} for the requested number of iterations and returns
+ * aggregate timing and success-rate information.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -14,6 +22,13 @@ public class LoadTestRunnerService {
 
     private final JwtService jwtService;
 
+    /**
+     * Runs the load test loop.
+     *
+     * @param algorithm  metric tag describing the algorithm under test
+     * @param iterations number of sign+verify cycles to execute
+     * @return aggregated load-test result
+     */
     public LoadTestResult runLoadTest(String algorithm, int iterations) {
         log.info("Starting load test for {}: {} iterations", algorithm, iterations);
         int successfulVerifications = 0;

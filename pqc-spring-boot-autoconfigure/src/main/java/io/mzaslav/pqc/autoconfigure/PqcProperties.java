@@ -12,6 +12,32 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+/**
+ * Type-safe binding for {@code pqc.*} configuration in
+ * {@code application.yml} / {@code application.properties}.
+ * <p>
+ * Validation rules ensure that the algorithm fields required by the chosen
+ * {@link CryptoMode} are set, and that compression is consistently configured.
+ * <p>
+ * Example:
+ * <pre>{@code
+ * pqc:
+ *   encryption:
+ *     mode: HYBRID
+ *     pqc-algorithm: ML_KEM_768
+ *     classical-algorithm: X25519
+ *     compression:
+ *       enabled: true
+ *       algorithm: ZSTD
+ *   signature:
+ *     mode: HYBRID
+ *     pqc-algorithm: ML_DSA_65
+ *     classical-algorithm: ED25519
+ * }</pre>
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @ConfigurationProperties(prefix = "pqc")
 @Validated
 public class PqcProperties {
@@ -25,6 +51,9 @@ public class PqcProperties {
     public Encryption getEncryption() { return encryption; }
     public Signature getSignature() { return signature; }
 
+    /**
+     * Encryption settings (KEM choice, mode, optional compression).
+     */
     public static class Encryption {
         private boolean enabled = true;
 
@@ -66,6 +95,9 @@ public class PqcProperties {
         public Compression getCompression() { return compression; }
     }
 
+    /**
+     * Optional compression applied to plaintext before encryption.
+     */
     public static class Compression {
         private boolean enabled = false;
 
@@ -83,6 +115,9 @@ public class PqcProperties {
         public void setAlgorithm(CompressionAlgorithm algorithm) { this.algorithm = algorithm; }
     }
 
+    /**
+     * Digital signature settings (signing algorithm choice and mode).
+     */
     public static class Signature {
         private boolean enabled = true;
 

@@ -1,4 +1,4 @@
-rootProject.name = "pqc-diploma"
+rootProject.name = "pqc-hybrid"
 
 include("pqc-crypto-core")
 include("pqc-spring-boot-autoconfigure")

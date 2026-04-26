@@ -20,12 +20,30 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Reads Micrometer meters tagged with a particular algorithm and assembles
+ * a structured {@link AlgorithmMetrics} snapshot for the REST API and the
+ * Grafana dashboard.
+ * <p>
+ * Also exposes {@link #calculateOverhead(AlgorithmMetrics, AlgorithmMetrics)}
+ * to compute relative overhead between two algorithms (e.g. classical vs.
+ * hybrid).
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 public class MetricsSnapshotService {
 
     private final MeterRegistry meterRegistry;
 
+    /**
+     * Builds a snapshot of all relevant meters for a single algorithm tag.
+     *
+     * @param algorithm the {@code algorithm} tag value to filter on
+     * @return a populated {@link AlgorithmMetrics} (with zero values for absent meters)
+     */
     public AlgorithmMetrics extractMetrics(String algorithm) {
         Timer signingTimer = meterRegistry.find(MetricNames.SIGN_DURATION)
                 .tag("algorithm", algorithm)
@@ -191,6 +209,14 @@ public class MetricsSnapshotService {
                 .build();
     }
 
+    /**
+     * Computes relative overhead (in percent) of {@code compared} versus
+     * {@code baseline} across timing, size, memory and efficiency dimensions.
+     *
+     * @param baseline reference metrics (e.g. classical algorithm)
+     * @param compared metrics being evaluated (e.g. hybrid algorithm)
+     * @return per-dimension overhead values
+     */
     public OverheadMetrics calculateOverhead(AlgorithmMetrics baseline, AlgorithmMetrics compared) {
         return OverheadMetrics.builder()
                 .tokenSizeIncrease(calculatePercentageIncrease(

@@ -6,6 +6,19 @@ import com.github.luben.zstd.Zstd;
 import io.mzaslav.pqc.compression.CompressionAlgorithm;
 import io.mzaslav.pqc.compression.DataCompressor;
 
+/**
+ * Experimental Fourier-domain residual compressor.
+ * <p>
+ * Splits the input into 1024-byte blocks, runs a Cooley-Tukey radix-2 FFT and
+ * keeps the {@value #RETAINED_FREQUENCIES} dominant harmonics; the residual
+ * between the original bytes and the inverse-FFT prediction is then fed
+ * through Zstd entropy coding. Designed for signal-like data where most
+ * energy concentrates in a few frequencies; on generic data it is usually
+ * out-performed by {@link ZstdCompressor}.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 public class FourierCompressor implements DataCompressor {
 
     private static final int BLOCK_SIZE = 1024;
@@ -22,12 +35,12 @@ public class FourierCompressor implements DataCompressor {
 
         int numBlocks = (int) Math.ceil((double) data.length / BLOCK_SIZE);
 
-        // Считаем точный размер сырого буфера (до применения энтропийного кодера ZSTD)
-        // На каждый блок: 64 байта метаданных Фурье (8 * 2 float) + размер самого блока (1 байт на residual)
+        // Raw buffer size before entropy coding: 4 bytes for original length
+        // + per-block: RETAINED_FREQUENCIES * 2 floats (Fourier metadata) + 1 residual byte per data byte.
         int rawBufferSize = 4 + (numBlocks * RETAINED_FREQUENCIES * 2 * 4) + data.length;
         ByteBuffer buffer = ByteBuffer.allocate(rawBufferSize);
 
-        buffer.putInt(data.length); // Сохраняем оригинальную длину файла
+        buffer.putInt(data.length);
 
         int offset = 0;
         double[] real = new double[BLOCK_SIZE];
@@ -36,37 +49,35 @@ public class FourierCompressor implements DataCompressor {
         while (offset < data.length) {
             int currentBlockSize = Math.min(BLOCK_SIZE, data.length - offset);
 
-            // Подготовка данных (заполнение нулями "хвоста" при необходимости)
+            // Load block, zero-pad the tail when needed.
             for (int i = 0; i < BLOCK_SIZE; i++) {
                 real[i] = (i < currentBlockSize) ? (data[offset + i] & 0xFF) : 0;
                 imag[i] = 0;
             }
 
-            // Прямое БПФ
+            // Forward FFT
             fft(real, imag, false);
 
-            // Сохраняем главные гармоники (Пишем float в буфер)
+            // Persist the dominant harmonics as floats.
             for (int i = 0; i < RETAINED_FREQUENCIES; i++) {
                 buffer.putFloat((float) real[i]);
                 buffer.putFloat((float) imag[i]);
             }
 
-            // Обнуляем "шум" (высокие частоты)
+            // Zero out the high-frequency "noise" coefficients.
             for (int i = RETAINED_FREQUENCIES; i < BLOCK_SIZE; i++) {
                 real[i] = 0;
                 imag[i] = 0;
             }
 
-            // Обратное БПФ
+            // Inverse FFT to obtain the predicted signal.
             fft(real, imag, true);
 
-            // Вычисляем Residuals используем 8-битную модулярную арифметику
+            // Store residuals in 8-bit modular arithmetic; (byte) cast handles
+            // wrap-around so explicit overflow handling is unnecessary.
             for (int i = 0; i < currentBlockSize; i++) {
                 int originalByte = data[offset + i] & 0xFF;
                 int predictedByte = (int) Math.round(real[i]);
-
-                // (byte) автоматически делает циклическое обрезание битов,
-                // поэтому нам не нужно обрабатывать overflow (выход за пределы -128..127)
                 byte residual = (byte) (originalByte - predictedByte);
                 buffer.put(residual);
             }
@@ -81,7 +92,7 @@ public class FourierCompressor implements DataCompressor {
     public byte[] decompress(byte[] compressedData) {
         if (compressedData == null || compressedData.length == 0) return compressedData;
 
-        // 1. Быстро снимаем промежуточный слой ZSTD
+        // 1. Strip the outer Zstd frame.
         long decompressedSize = Zstd.getFrameContentSize(compressedData);
         if (decompressedSize <= 0 || decompressedSize > 100_000_000) {
             throw new RuntimeException("Invalid Fourier-ZSTD frame");
@@ -89,7 +100,7 @@ public class FourierCompressor implements DataCompressor {
         byte[] rawBuffer = Zstd.decompress(compressedData, (int) decompressedSize);
         ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
 
-        // 2. Читаем размер оригинального документа
+        // 2. Read original payload length.
         int originalLength = buffer.getInt();
         byte[] result = new byte[originalLength];
 
@@ -100,7 +111,7 @@ public class FourierCompressor implements DataCompressor {
         while (offset < originalLength) {
             int currentBlockSize = Math.min(BLOCK_SIZE, originalLength - offset);
 
-            // 3. Читаем сохраненные 8 главных гармоник
+            // 3. Read the persisted dominant harmonics.
             for (int i = 0; i < BLOCK_SIZE; i++) {
                 if (i < RETAINED_FREQUENCIES) {
                     real[i] = buffer.getFloat();
@@ -111,15 +122,13 @@ public class FourierCompressor implements DataCompressor {
                 }
             }
 
-            // 4. Обратное БПФ строит предсказанный сигнал
+            // 4. Inverse FFT yields the predicted signal.
             fft(real, imag, true);
 
-            // 5. Читаем Residuals и восстанавливаем оригинальный байт
+            // 5. Combine prediction + residual to recover each original byte.
             for (int i = 0; i < currentBlockSize; i++) {
                 byte residual = buffer.get();
                 int predictedByte = (int) Math.round(real[i]);
-
-                // Обратная математическая магия: сложение с обрезанием восстановит байт
                 result[offset + i] = (byte) (predictedByte + residual);
             }
 
@@ -129,7 +138,7 @@ public class FourierCompressor implements DataCompressor {
         return result;
     }
 
-    // метод алгоритма Кули-Тьюки Radix-2
+    // Cooley-Tukey radix-2 FFT.
     private void fft(double[] real, double[] imag, boolean inverse) {
         int n = real.length;
         if (n == 0) return;

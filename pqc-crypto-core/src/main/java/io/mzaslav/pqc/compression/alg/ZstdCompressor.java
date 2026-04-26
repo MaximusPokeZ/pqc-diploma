@@ -5,9 +5,18 @@ import io.mzaslav.pqc.compression.CompressionAlgorithm;
 import io.mzaslav.pqc.compression.DataCompressor;
 import io.mzaslav.pqc.exception.EncryptionException;
 
+/**
+ * Zstandard (Zstd) compressor backed by the {@code zstd-jni} native binding.
+ * <p>
+ * Uses compression level 3 - a sweet-spot trade-off between compression ratio
+ * and CPU cost. Generally produces smaller output than GZIP at higher speeds.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 public class ZstdCompressor implements DataCompressor {
 
-    // Уровень сжатия (от 1 до 22). 3 - это дефолт, идеальный баланс скорости и размера.
+    // Compression level (1-22). 3 is the default and balances speed vs. ratio.
     private static final int COMPRESSION_LEVEL = 3;
 
     @Override

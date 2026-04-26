@@ -12,6 +12,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Toggle that schedules the comparative benchmark on a recurring 5-second
+ * delay. Calling {@link #toggle(int)} once starts the loop; calling it again
+ * stops it. Designed for demos so the dashboard is continuously fed with
+ * fresh data points without manual button-mashing.
+ *
+ * @author mzaslav
+ * @since 1.0
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
