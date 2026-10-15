@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Гибридная постквантовая защита архивов</title>
+<style>
+  :root {
+    --ink: #16191d;
+    --ink-2: #4a525c;
+    --ink-3: #7a828c;
+    --rule: #d5d9de;
+    --tint: #f3f5f8;
+    --pqc: #1f57b5;
+    --hyb: #d0571b;
+    --base: #b9c0c8;
+  }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; color: var(--ink); }
+  body {
+    position: relative; width: 210mm; height: 297mm; overflow: hidden;
+    padding: 8mm 11mm 0;
+    font: 8pt/1.27 "Liberation Serif", "Times New Roman", serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  .runhead {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font: 600 6.3pt/1 "Inter", sans-serif; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-2); border-bottom: 1.5pt solid var(--ink); padding-bottom: 1.5mm;
+  }
+  .runhead .rubric { color: var(--pqc); }
+
+  h1 {
+    font: 700 14pt/1.14 "Inter Display", "Inter", sans-serif; letter-spacing: -.012em;
+    margin: 2.6mm 0 .9mm;
+  }
+  .entitle { font: italic 7.8pt/1.25 "Liberation Serif", serif; color: var(--ink-2); margin: 0 0 1.5mm; }
+  .authors { font: 600 7.8pt/1.3 "Inter", sans-serif; margin: 0; }
+  .authors span { font-weight: 400; color: var(--ink-2); }
+  .affil { font: 6.8pt/1.3 "Inter", sans-serif; color: var(--ink-2); margin: .4mm 0 2.2mm; }
+
+  .abstract {
+    display: grid; grid-template-columns: 1fr 66mm; gap: 4mm;
+    background: var(--tint); border-left: 2.2pt solid var(--pqc);
+    padding: 2.2mm 3mm 2.2mm 3.4mm; margin-bottom: 2.4mm;
+  }
+  .abstract p { margin: 0; text-align: justify; }
+  .label { font: 700 6.2pt/1 "Inter", sans-serif; letter-spacing: .07em; text-transform: uppercase; color: var(--pqc); margin-right: 1.2mm; }
+  .kw { margin-top: 1.1mm !important; font-size: 7.3pt; color: var(--ink-2); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5mm; align-content: center; }
+  .stat { background: #fff; border: .5pt solid var(--rule); padding: 1.4mm 1.9mm 1.5mm; }
+  .stat b { display: block; font: 700 13pt/1 "Inter Display", "Inter", sans-serif; color: var(--pqc); letter-spacing: -.02em; }
+  .stat b.alt { color: var(--hyb); }
+  .stat span { display: block; font: 6pt/1.22 "Inter", sans-serif; color: var(--ink-2); margin-top: .7mm; }
+
+  figure { margin: 0; break-inside: avoid; }
+  figcaption { font: 6.6pt/1.3 "Inter", sans-serif; color: var(--ink-2); margin-top: .8mm; }
+  figcaption b { color: var(--ink); }
+  .fig-wide { margin-bottom: 2.2mm; padding-bottom: 2mm; border-bottom: .5pt solid var(--rule); }
+  svg { display: block; width: 100%; height: auto; }
+  svg text { font-family: "Inter", sans-serif; }
+
+  .cols { column-count: 2; column-gap: 5.5mm; column-rule: .4pt solid var(--rule); column-fill: auto; height: 147mm; }
+  .cols p { margin: 0 0 .8mm; text-indent: 3.5mm; text-align: justify; }
+  .cols p.ni { text-indent: 0; }
+  h2 {
+    font: 700 7pt/1.2 "Inter", sans-serif; letter-spacing: .06em; text-transform: uppercase;
+    margin: 1.6mm 0 .8mm; break-after: avoid;
+  }
+  h2 .n { color: var(--pqc); margin-right: 1.3mm; }
+  h2:first-child { margin-top: 0; }
+  .eq { display: flex; justify-content: space-between; align-items: center; margin: .6mm 0 .9mm 3.5mm; font-style: italic; font-size: 8.4pt; }
+  .eq .no { font-style: normal; font-size: 7.6pt; color: var(--ink-2); }
+  sub { font-size: 70%; line-height: 0; }
+  .cols figure { margin: 1.4mm 0 1.8mm; }
+
+  table { width: 100%; border-collapse: collapse; font: 6.7pt/1.22 "Inter", sans-serif; font-variant-numeric: tabular-nums; margin: 1mm 0 1.6mm; }
+  caption { caption-side: top; text-align: left; font: 6.6pt/1.3 "Inter", sans-serif; color: var(--ink-2); margin-bottom: .6mm; }
+  caption b { color: var(--ink); }
+  th { text-align: left; font-weight: 600; color: var(--ink-2); border-bottom: .8pt solid var(--ink); padding: .4mm .7mm; }
+  td { padding: .45mm .7mm; border-bottom: .4pt solid var(--rule); }
+  td.r, th.r { text-align: right; white-space: nowrap; }
+  td.g { color: var(--pqc); font-weight: 600; }
+  tr:last-child td { border-bottom: .8pt solid var(--ink); }
+
+  .refs { font-size: 6.5pt; line-height: 1.22; color: var(--ink-2); padding-left: 3.4mm; margin: 0; }
+
+  .foot {
+    position: absolute; left: 11mm; right: 11mm; bottom: 5.5mm;
+    display: flex; justify-content: space-between;
+    font: 6.2pt/1 "Inter", sans-serif; color: var(--ink-3);
+    border-top: .5pt solid var(--rule); padding-top: 1.3mm;
+  }
+</style>
+</head>
+<body>
+
+<div class="runhead"><span class="rubric">Информационная безопасность · Постквантовая криптография</span><span>Научная статья · УДК 004.056.55</span></div>
+
+<h1>Квантово-устойчивое хранение цифровых активов: гибридный KEM X25519&nbsp;+&nbsp;ML-KEM и&nbsp;спектральное предсжатие на&nbsp;платформе Java&nbsp;25</h1>
+<p class="entitle">Quantum-resistant storage of digital assets: hybrid X25519 + ML-KEM key encapsulation and spectral pre-compression on Java 25</p>
+<p class="authors">М. В. Заславцев <span>· науч. рук. — к. т. н., доцент А. М. Романенков</span></p>
+<p class="affil">Московский авиационный институт (НИУ), кафедра 806 «Вычислительная математика и программирование», Москва</p>
+
+<section class="abstract">
+  <div>
+    <p><span class="label">Аннотация</span>Атака «Harvest Now, Decrypt Later» угрожает уже сегодня архивам, которые должны оставаться секретными 10 лет и более: перехваченный шифротекст будет вскрыт алгоритмом Шора на квантовом компьютере. Предложена подсистема хранения, в которой ключ данных выводится через HKDF из двух независимых секретов — X25519 и ML-KEM-768 (FIPS 203), а целостность обеспечивает композитная подпись Ed25519 ‖ ML-DSA-65 (FIPS 204). Рост PQC-артефактов компенсирует конвейер «сжатие → шифрование» с авторским спектрально-энтропийным алгоритмом FOURIER. Решение реализовано на штатных API Java 25 как криптоагильный Spring Boot Starter.</p>
+    <p class="kw"><span class="label">Ключевые слова</span>постквантовая криптография, ML-KEM, ML-DSA, гибридный KEM, HKDF, HNDL, Compress-then-Encrypt, БПФ, Java 25.</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>71 %</b><span>сжатие сырой телеметрии алгоритмом FOURIER (ZSTD — 21 %)</span></div>
+    <div class="stat"><b class="alt">−29 %</b><span>время крипто-цикла при сжатии перед AES-GCM</span></div>
+    <div class="stat"><b>8×</b><span>быстрее верификация ML-DSA-65, чем Ed25519</span></div>
+    <div class="stat"><b class="alt">5 300</b><span>гибридных операций/с (10 КБ, одно ядро)</span></div>
+  </div>
+</section>
+
+<figure class="fig-wide">
+<svg viewBox="0 0 700 161" role="img" aria-label="Схема гибридного конвейера шифрования">
+  <defs>
+    <marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="#4a525c"/></marker>
+    <marker id="arb" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L8 4 L0 8 z" fill="#1f57b5"/></marker>
+  </defs>
+  <g font-size="9.5" fill="#16191d">
+    <rect x="0.5" y="28" width="104" height="38" rx="4" fill="#fff" stroke="#b9c0c8"/>
+    <text x="52" y="44" text-anchor="middle" font-weight="600">Ключ получателя</text>
+    <text x="52" y="57" text-anchor="middle" fill="#4a525c" font-size="8.5">pk<tspan font-size="6.5" dy="2">cl</tspan><tspan dy="-2">, pk</tspan><tspan font-size="6.5" dy="2">pq</tspan></text>
+    <line x1="105" y1="47" x2="128" y2="47" stroke="#4a525c" stroke-width="1.2" marker-end="url(#ar)"/>
+
+    <rect x="130" y="10" width="146" height="74" rx="5" fill="#eef3fb" stroke="#1f57b5" stroke-width="1.2"/>
+    <text x="203" y="23" text-anchor="middle" font-size="8" font-weight="700" fill="#1f57b5" letter-spacing=".6">ГИБРИДНЫЙ KEM</text>
+    <rect x="138" y="29" width="130" height="22" rx="3" fill="#fff" stroke="#b9c0c8"/>
+    <text x="203" y="43.5" text-anchor="middle"><tspan font-weight="600">X25519</tspan><tspan fill="#4a525c" font-size="8.5"> · ECDH, 32 Б</tspan></text>
+    <rect x="138" y="55" width="130" height="22" rx="3" fill="#fff" stroke="#1f57b5"/>
+    <text x="203" y="69.5" text-anchor="middle"><tspan font-weight="600" fill="#1f57b5">ML-KEM-768</tspan><tspan fill="#4a525c" font-size="8.5"> · FIPS 203</tspan></text>
+
+    <line x1="276" y1="47" x2="318" y2="47" stroke="#1f57b5" stroke-width="1.4" marker-end="url(#arb)"/>
+    <text x="297" y="41" text-anchor="middle" font-size="8" fill="#1f57b5" font-style="italic">K<tspan font-size="6" dy="2">cl</tspan><tspan dy="-2">‖K</tspan><tspan font-size="6" dy="2">pq</tspan></text>
+
+    <rect x="320" y="24" width="140" height="46" rx="5" fill="#1f57b5"/>
+    <text x="390" y="42" text-anchor="middle" fill="#fff" font-weight="700">HKDF-SHA256</text>
+    <text x="390" y="58" text-anchor="middle" fill="#dbe6f7" font-size="8">стойкость ≥ max(S<tspan font-size="6" dy="2">cl</tspan><tspan dy="-2">, S</tspan><tspan font-size="6" dy="2">pq</tspan><tspan dy="-2">)</tspan></text>
+
+    <path d="M232 10 V3 H540 V96" fill="none" stroke="#4a525c" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#ar)"/>
+    <text x="534" y="14" text-anchor="end" font-size="8" fill="#4a525c">инкапсуляции C<tspan font-size="6" dy="2">cl</tspan><tspan dy="-2"> ‖ C</tspan><tspan font-size="6" dy="2">pq</tspan><tspan dy="-2"> (32 + 1088 Б)</tspan></text>
+
+    <line x1="390" y1="70" x2="390" y2="94" stroke="#1f57b5" stroke-width="1.4" marker-end="url(#arb)"/>
+    <text x="396" y="86" font-size="8" fill="#1f57b5">DEK, 256 бит</text>
+
+    <rect x="0.5" y="96" width="104" height="40" rx="4" fill="#fff" stroke="#b9c0c8"/>
+    <text x="52" y="113" text-anchor="middle" font-weight="600">Цифровой актив</text>
+    <text x="52" y="126" text-anchor="middle" fill="#4a525c" font-size="8.5">plaintext</text>
+    <line x1="105" y1="116" x2="153" y2="116" stroke="#4a525c" stroke-width="1.2" marker-end="url(#ar)"/>
+
+    <rect x="155" y="96" width="134" height="40" rx="4" fill="#fdf1ea" stroke="#d0571b" stroke-width="1.2"/>
+    <text x="222" y="112" text-anchor="middle" font-weight="700" fill="#b0440f">Сжатие</text>
+    <text x="222" y="125" text-anchor="middle" fill="#4a525c" font-size="8">ZSTD · LZ4 · <tspan font-weight="700" fill="#b0440f">FOURIER</tspan> · fallback</text>
+        <line x1="289" y1="116" x2="318" y2="116" stroke="#4a525c" stroke-width="1.2" marker-end="url(#ar)"/>
+
+    <rect x="320" y="96" width="140" height="40" rx="4" fill="#fff" stroke="#1f57b5" stroke-width="1.2"/>
+    <text x="390" y="112" text-anchor="middle" font-weight="700">AES-256-GCM</text>
+    <text x="390" y="125" text-anchor="middle" fill="#4a525c" font-size="8">AEAD, 12 Б nonce, 16 Б tag</text>
+    <line x1="460" y1="116" x2="488" y2="116" stroke="#4a525c" stroke-width="1.2" marker-end="url(#ar)"/>
+
+    <rect x="490" y="96" width="100" height="40" rx="4" fill="#16191d"/>
+    <text x="540" y="112" text-anchor="middle" font-weight="700" fill="#fff">Контейнер</text>
+    <text x="540" y="125" text-anchor="middle" fill="#c9ced4" font-size="8">EncryptedMessage</text>
+    <line x1="590" y1="116" x2="606" y2="116" stroke="#4a525c" stroke-width="1.2" marker-end="url(#ar)"/>
+
+    <rect x="608" y="96" width="91" height="40" rx="4" fill="#fff" stroke="#d0571b" stroke-width="1.2"/>
+    <text x="653.5" y="112" text-anchor="middle" font-weight="700" font-size="9">Подпись</text>
+    <text x="653.5" y="125" text-anchor="middle" fill="#4a525c" font-size="7.6">Ed25519 ‖ ML-DSA-65</text>
+
+    <text x="0" y="153" font-size="7.5" font-weight="700" fill="#7a828c" letter-spacing=".5">WIRE FORMAT</text>
+    <g font-size="7.8" text-anchor="middle">
+      <rect x="64" y="142" width="40" height="18" fill="#eef1f4" stroke="#fff"/><text x="84" y="154">Ver 1</text>
+      <rect x="104" y="142" width="54" height="18" fill="#eef1f4" stroke="#fff"/><text x="131" y="154">KemAlg 1</text>
+      <rect x="158" y="142" width="58" height="18" fill="#eef1f4" stroke="#fff"/><text x="187" y="154">CompAlg 1</text>
+      <rect x="216" y="142" width="80" height="18" fill="#eef1f4" stroke="#fff"/><text x="256" y="154">KEM len 4 (BE)</text>
+      <rect x="296" y="142" width="170" height="18" fill="#dbe6f7" stroke="#fff"/><text x="381" y="154" fill="#1f57b5" font-weight="600">C<tspan font-size="6" dy="2">X25519</tspan><tspan dy="-2"> ‖ C</tspan><tspan font-size="6" dy="2">ML-KEM</tspan><tspan dy="-2"> · 1120</tspan></text>
+      <rect x="466" y="142" width="233" height="18" fill="#16191d" stroke="#fff"/><text x="582" y="154" fill="#fff">AEAD-шифротекст (сжатый) + 16 MAC</text>
+    </g>
+  </g>
+</svg>
+<figcaption><b>Рис. 1.</b> Гибридный конвейер «сжатие → шифрование». Ключ данных выводится из двух независимых секретов и остаётся стойким, пока не взломаны <i>оба</i> механизма инкапсуляции; префиксы длины в заголовке исключают неоднозначность конкатенации. Размеры полей — в байтах.</figcaption>
+</figure>
+
+<div class="cols">
+  <h2><span class="n">1</span>Проблема</h2>
+  <p>Алгоритм Шора [1] обнуляет стойкость RSA и ECC. Для данных в состоянии покоя важна не дата появления квантового компьютера (CRQC), а модель HNDL: шифротекст, перехваченный сегодня, будет вскрыт завтра. Жизненный цикл аэрокосмических изделий и их документации — 20–50 лет, что перекрывает прогнозы появления CRQC [5]. Стандарты FIPS 203/204 утверждены NIST в 2024 г. [2, 3], но их криптоанализ молод (финалист NIST SIKE был взломан на обычном ПК), поэтому, следуя ANSSI [6], мы комбинируем классику с PQC, а не заменяем её.</p>
+
+  <h2><span class="n">2</span>Метод</h2>
+  <p class="ni"><b>Гибридная инкапсуляция.</b> X25519 и ML-KEM-768 выполняются независимо, их секреты смешиваются через HKDF [4]:</p>
+  <div class="eq"><span>K = HKDF-Expand(HKDF-Extract(salt, K<sub>cl</sub> ‖ K<sub>pq</sub>), info)</span><span class="no">(1)</span></div>
+  <p class="ni">В отличие от наивного хеширования конкатенации, (1) даёт S<sub>hyb</sub> ≥ max(S<sub>cl</sub>, S<sub>pq</sub>). Подпись — композит ω = (ω<sub>Ed25519</sub>, ω<sub>ML-DSA</sub>), принимаемый только при валидности обеих частей.</p>
+  <p><b>Compress-then-Encrypt.</b> Шифротекст AES-GCM имеет максимальную энтропию и не сжимается, поэтому сжатие выполняется до шифрования. Если выигрыша нет (архивы, зашифрованные файлы), сжатие отменяется маркером NONE в заголовке — контейнер не раздувается.</p>
+  <p><b>Алгоритм FOURIER.</b> Словарные методы (LZ77) бессильны на плавных градиентах телеметрии. Блок 1024 Б переводится БПФ (radix-2) в частотную область, сохраняются 8 низших гармоник, обратное БПФ даёт предсказание x̂, а в поток пишутся невязки r<sub>i</sub> = (x<sub>i</sub> − x̂<sub>i</sub>) mod 256. Кольцевая 8-битная арифметика даёт строго обратимое восстановление x<sub>i</sub> = (x̂<sub>i</sub> + r<sub>i</sub>) mod 256 без ветвлений, а невязки с низкой энтропией дожимает ZSTD.</p>
+
+  <figure>
+  <svg viewBox="0 0 336 106" role="img" aria-label="Размер 50 КБ телеметрии после сжатия">
+    <g font-size="9" fill="#16191d">
+      <text x="0" y="9" font-size="7.5" fill="#7a828c" font-weight="700" letter-spacing=".5">РАЗМЕР ПОСЛЕ СЖАТИЯ, КБ (МЕНЬШЕ — ЛУЧШЕ)</text>
+      <line x1="62" y1="16" x2="62" y2="105" stroke="#7a828c" stroke-width=".8"/>
+      <text x="56" y="28.5" text-anchor="end">Исходно</text>
+      <path d="M62 20 H269 a3 3 0 0 1 3 3 v5 a3 3 0 0 1 -3 3 H62 z" fill="#b9c0c8"/>
+      <text x="277" y="28.5" fill="#4a525c">50,0</text>
+      <text x="56" y="46.5" text-anchor="end">LZ4</text>
+      <path d="M62 38 H254.3 a3 3 0 0 1 3 3 v5 a3 3 0 0 1 -3 3 H62 z" fill="#b9c0c8"/>
+      <text x="262" y="46.5" fill="#4a525c">46,5 <tspan fill="#7a828c">−7 %</tspan></text>
+      <text x="56" y="64.5" text-anchor="end">GZIP</text>
+      <path d="M62 56 H238.8 a3 3 0 0 1 3 3 v5 a3 3 0 0 1 -3 3 H62 z" fill="#b9c0c8"/>
+      <text x="247" y="64.5" fill="#4a525c">42,8 <tspan fill="#7a828c">−14 %</tspan></text>
+      <text x="56" y="82.5" text-anchor="end">ZSTD</text>
+      <path d="M62 74 H223.6 a3 3 0 0 1 3 3 v5 a3 3 0 0 1 -3 3 H62 z" fill="#b9c0c8"/>
+      <text x="232" y="82.5" fill="#4a525c">39,2 <tspan fill="#7a828c">−21 %</tspan></text>
+      <text x="56" y="100.5" text-anchor="end" font-weight="700" fill="#1f57b5">FOURIER</text>
+      <path d="M62 92 H119.3 a3 3 0 0 1 3 3 v5 a3 3 0 0 1 -3 3 H62 z" fill="#1f57b5"/>
+      <text x="128" y="100.5" font-weight="700">14,35 <tspan fill="#1f57b5">−71 %</tspan></text>
+    </g>
+  </svg>
+  <figcaption><b>Рис. 2.</b> Сжатие 50 КБ сырой телеметрии с шумом: нагрузка на AES-GCM ниже в 3,5 раза. На тексте лидирует ZSTD (94,8 % против 86,2 %), поэтому FOURIER — опция для сигналов.</figcaption>
+  </figure>
+
+  <h2><span class="n">3</span>Эксперимент</h2>
+  <p>Замеры выполнены в демо-приложении на Spring Boot, метрики собирались в Prometheus и Grafana (20 итераций после прогрева JIT). Цена квантовой устойчивости — рост артефактов (табл. 1). Контринтуитивно, сжатие <i>ускоряет</i> полный крипто-цикл на 29 %: компрессия дешевле AEAD-обработки исходного объёма.</p>
+
+  <table>
+    <caption><b>Таблица 1.</b> Цена квантовой устойчивости и её компенсация</caption>
+    <thead><tr><th>Показатель</th><th class="r">Классика</th><th class="r">Гибрид</th></tr></thead>
+    <tbody>
+      <tr><td>Накладные расходы KEM, Б</td><td class="r">79</td><td class="r">1175</td></tr>
+      <tr><td>Размер подписи, Б</td><td class="r">64</td><td class="r">3309</td></tr>
+      <tr><td>Генерация ключей подписи, мс</td><td class="r">0,4</td><td class="r">1,8</td></tr>
+      <tr><td>Цикл шифр.+расшифр., мс: без сжатия → LZ4</td><td class="r">—</td><td class="r g">0,96 → 0,68</td></tr>
+      <tr><td>Пропускная способность, оп/с: без сжатия → LZ4</td><td class="r">15 200</td><td class="r g">4100 → 5300</td></tr>
+    </tbody>
+  </table>
+
+  <figure>
+  <svg viewBox="0 18 336 122" role="img" aria-label="Задержки подписи и верификации">
+    <g font-size="8.4" fill="#16191d">
+      <text x="104" y="27" font-size="7.5" font-weight="700" fill="#7a828c" letter-spacing=".5">ПОДПИСЬ, МС</text>
+      <text x="226" y="27" font-size="7.5" font-weight="700" fill="#7a828c" letter-spacing=".5">ВЕРИФИКАЦИЯ, МС</text>
+      <line x1="104" y1="33" x2="104" y2="138" stroke="#7a828c" stroke-width=".8"/>
+      <line x1="226" y1="33" x2="226" y2="138" stroke="#7a828c" stroke-width=".8"/>
+      <g text-anchor="end">
+        <text x="98" y="44">RSA-2048</text>
+        <text x="98" y="59">ECDSA P-256</text>
+        <text x="98" y="74">Ed25519</text>
+        <text x="98" y="89" fill="#1f57b5" font-weight="600">ML-DSA-44</text>
+        <text x="98" y="104" fill="#1f57b5" font-weight="600">ML-DSA-65</text>
+        <text x="98" y="119" fill="#1f57b5" font-weight="600">ML-DSA-87</text>
+        <text x="98" y="134" fill="#b0440f" font-weight="600">Ed25519+ML-DSA-65</text>
+      </g>
+      <g fill="#b9c0c8">
+        <rect x="104" y="36" width="87.3" height="10" rx="3"/>
+        <rect x="104" y="51" width="9.9" height="10" rx="3"/>
+        <rect x="104" y="66" width="41.4" height="10" rx="3"/>
+        <rect x="226" y="36" width="3.3" height="10" rx="1.5"/>
+        <rect x="226" y="51" width="32.8" height="10" rx="3"/>
+        <rect x="226" y="66" width="40.8" height="10" rx="3"/>
+      </g>
+      <g fill="#1f57b5">
+        <rect x="104" y="81" width="9.9" height="10" rx="3"/>
+        <rect x="104" y="96" width="16.2" height="10" rx="3"/>
+        <rect x="104" y="111" width="21.6" height="10" rx="3"/>
+        <rect x="226" y="81" width="3" height="10" rx="1.5"/>
+        <rect x="226" y="96" width="5" height="10" rx="2"/>
+        <rect x="226" y="111" width="7.9" height="10" rx="3"/>
+      </g>
+      <g fill="#d0571b">
+        <rect x="104" y="126" width="59.4" height="10" rx="3"/>
+        <rect x="226" y="126" width="47.7" height="10" rx="3"/>
+      </g>
+      <g fill="#4a525c" font-size="7.8">
+        <text x="195" y="44">0,97</text>
+        <text x="117" y="59">0,11</text>
+        <text x="149" y="74">0,46</text>
+        <text x="117" y="89" fill="#16191d">0,11</text>
+        <text x="124" y="104" fill="#16191d" font-weight="700">0,18</text>
+        <text x="129" y="119" fill="#16191d">0,24</text>
+        <text x="167" y="134" fill="#16191d">0,66</text>
+        <text x="233" y="44">0,037</text>
+        <text x="262" y="59">0,36</text>
+        <text x="270" y="74">0,46</text>
+        <text x="233" y="89" fill="#16191d">0,034</text>
+        <text x="235" y="104" fill="#16191d" font-weight="700">0,056</text>
+        <text x="237" y="119" fill="#16191d">0,087</text>
+        <text x="277" y="134" fill="#16191d">0,53</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption><b>Рис. 3.</b> Задержки подписи и верификации: <span style="color:#7a828c">классика</span>, <span style="color:#1f57b5">PQC</span>, <span style="color:#b0440f">гибрид</span>. ML-DSA-65 подписывает в 5 раз быстрее RSA-2048 и проверяет в 8 раз быстрее Ed25519.</figcaption>
+  </figure>
+
+  <h2><span class="n">4</span>Заключение</h2>
+  <p>Создан готовый к внедрению <i>pqc-hybrid-spring-boot-starter</i> на штатных API Java 25 без нативных библиотек [7]. Режим (HYBRID / PQC_ONLY / CLASSICAL_ONLY), уровни ML-KEM и ML-DSA и алгоритм сжатия задаются конфигурацией без перекомпиляции — это путь к будущим отечественным стандартам. Рост артефактов компенсируется предсжатием, а подпись на решётках быстрее классической.</p>
+
+  <h2>Литература</h2>
+  <ol class="refs">
+    <li>Shor P. W. Algorithms for quantum computation // Proc. 35th FOCS. 1994. P. 124–134.</li>
+    <li>NIST FIPS 203: ML-KEM Standard. 2024.</li>
+    <li>NIST FIPS 204: ML-DSA Standard. 2024.</li>
+    <li>Krawczyk H., Eronen P. RFC 5869: HKDF. IETF, 2010.</li>
+    <li>Mosca M., Piani M. Quantum Threat Timeline Report. Global Risk Institute, 2024.</li>
+    <li>ANSSI views on the PQC transition. ANSSI, 2023.</li>
+    <li>OpenJDK. JEP 496: ML-KEM; JEP 497: ML-DSA. 2025.</li>
+  </ol>
+</div>
+
+<div class="foot"><span>© 2026 М. В. Заславцев · МАИ, кафедра 806</span><span>Исходный код: github.com/MaximusPokeZ/pqc-diploma</span></div>
+</body>
+</html>
