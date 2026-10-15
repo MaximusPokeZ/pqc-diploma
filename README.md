@@ -4,6 +4,11 @@ A Java 25 library and Spring Boot starter for **hybrid post-quantum cryptography
 
 The project is the practical part of an undergraduate thesis on *"long-term secure storage of digital assets using hybrid post-quantum cryptographic algorithms on the Java 25 platform"*. The contribution is the hybrid construction itself – key encapsulation and signatures that defend against both classical and "harvest now, decrypt later" quantum adversaries – packaged as a drop-in Spring Boot starter.
 
+## Thesis
+
+- [Thesis (PDF, in Russian)](docs/thesis.pdf)
+- [Defense presentation (PDF, in Russian)](docs/presentation.pdf)
+
 ## What's in the box
 
 | Primitive | Classical | Post-quantum (NIST FIPS) | Combiner |
@@ -94,6 +99,7 @@ The demo exposes:
 
 ```
 PQC-HYBRID/
+├── docs/                            # thesis and presentation (PDF)
 ├── pqc-crypto-core/                 # core library (no Spring)
 ├── pqc-spring-boot-autoconfigure/   # @AutoConfiguration + @ConfigurationProperties
 ├── pqc-hybrid-spring-boot-starter/  # aggregating starter
